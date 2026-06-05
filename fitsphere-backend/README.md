@@ -1,90 +1,158 @@
-# FitSphere Full Stack Fitness Management System
+# FitSphere - Full Stack Fitness Management System
 
 ## Overview
 
-FitSphere is a full-stack fitness tracking platform developed using Spring Boot and React.
+FitSphere is a Full Stack Fitness Management Application developed using Spring Boot, React, MySQL, JWT Authentication, and Ollama AI Integration.
 
-Users can:
-
-- Register & Login
-- Manage Profile
-- Track Workouts
-- Track Diet Plans
-- Monitor Fitness Progress
-- Generate Reports
-- Get AI Fitness Guidance using Ollama
-
----
-
-## Tech Stack
-
-### Frontend
-
-- React.js
-- Vite
-- Tailwind CSS
-- Axios
-- React Router
-
-### Backend
-
-- Spring Boot
-- Spring Security
-- JWT Authentication
-- Spring Data JPA
-- MySQL
-
-### AI Integration
-
-- Ollama
-- Llama3
+The system helps users manage workouts, diet plans, fitness goals, progress tracking, and health analytics through a modern web-based platform.
 
 ---
 
 ## Features
 
-### User Module
+### User Management
 
-- Authentication
-- Profile Management
-- Workout Tracking
-- Diet Tracking
-- Progress Tracking
-- BMI Calculator
-- Reports
+* User Registration
+* User Login
+* JWT Authentication
+* Profile Management
+
+### Fitness Tracking
+
+* Workout Management
+* Exercise Tracking
+* Diet Tracking
+* BMI Calculator
+* Fitness Score Calculator
+
+### Progress Tracking
+
+* Weight Tracking
+* Progress Analytics
+* Goal Achievement Tracker
+* Progress History
+
+### Reports
+
+* Weekly Fitness Reports
+* Monthly Fitness Reports
+* Workout Streak Tracking
 
 ### AI Fitness Coach
 
-- Workout Suggestions
-- Diet Recommendations
-- Fitness Guidance
-
-Powered by:
-
-- Ollama
-- Llama3
+* Ollama Integration
+* Personalized Fitness Guidance
+* Workout Recommendations
+* Nutrition Suggestions
 
 ### Admin Module
 
-- View All Users
-- System Statistics
-- User Monitoring
-- Platform Analytics
+* User Monitoring
+* System Statistics
+* User Management
+* Platform Analytics
+
+---
+
+## Technology Stack
+
+### Frontend
+
+* React.js
+* React Router
+* Axios
+* Tailwind CSS
+
+### Backend
+
+* Spring Boot
+* Spring Security
+* JWT Authentication
+* Spring Data JPA
+
+### Database
+
+* MySQL
+
+### AI Integration
+
+* Ollama
+* Llama 3
+
+---
+
+## Project Structure
+
+FitSphere
+
+├── fitsphere-frontend
+
+│   ├── src
+
+│   ├── components
+
+│   ├── pages
+
+│   └── services
+
+│
+
+├── fitsphere-backend
+
+│   ├── controller
+
+│   ├── service
+
+│   ├── repository
+
+│   ├── entity
+
+│   └── dto
+
+│
+
+└── database
+
+---
+
+## Installation
+
+### Clone Repository
+
+git clone <repository-url>
+
+### Backend
+
+cd fitsphere-backend
+
+Configure MySQL database
+
+Run Spring Boot Application
+
+### Frontend
+
+cd fitsphere-frontend
+
+npm install
+
+npm run dev
 
 ---
 
 ## Future Enhancements
 
-- AI Chat Memory
-- Personalized AI Recommendations
-- Advanced Analytics
-- Role Based Access Control
-- Mobile Application
+* Mobile Application
+* Smart Wearable Integration
+* Advanced AI Fitness Coach
+* Personalized Meal Planner
+* Real-Time Notifications
+* Social Fitness Community
 
 ---
 
-## Run Frontend
+## Developed By
 
-```bash
-npm install
-npm run dev
+Yash Patil
+
+Full Stack Fitness Management System Project
+
