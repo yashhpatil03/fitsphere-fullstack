@@ -2,491 +2,201 @@ import { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
 import DietCard from "../components/DietCard";
 import api from "../services/api";
-import dietBanner from "../assets/diet-banner.jpg";
 
 function Diet() {
-
-    const [diets, setDiets] = useState([]);
-    const [recommendations, setRecommendations] = useState([]);
-
-    const [summary, setSummary] = useState({
-        totalCalories: 0,
-        totalProtein: 0,
-        totalCarbs: 0,
-        totalFats: 0
-    });
-
-    const [goal, setGoal] = useState({
-        goalCalories: 0,
-        consumedCalories: 0,
-        remainingCalories: 0
-    });
-
-    const [streak, setStreak] = useState({
-        currentStreak: 0
-    });
-
-    const [mealName, setMealName] = useState("");
-    const [calories, setCalories] = useState("");
-    const [protein, setProtein] = useState("");
-    const [carbs, setCarbs] = useState("");
-    const [fats, setFats] = useState("");
-    const [mealDate, setMealDate] = useState("");
-
-    const token = localStorage.getItem("token");
-
-    const config = {
-        headers: {
-            Authorization: `Bearer ${token}`
-        }
-    };
-
-    const loadData = async () => {
-
-        try {
-
-            const dietsRes =
-                await api.get("/diets", config);
-
-            const summaryRes =
-                await api.get(
-                    "/diets/summary/today",
-                    config
-                );
-
-            const goalRes =
-                await api.get(
-                    "/diets/calorie-goal",
-                    config
-                );
-
-            const streakRes =
-                await api.get(
-                    "/diets/streak",
-                    config
-                );
-            const recommendationRes =
-               await api.get(
-                 "/users/recommendations/diet",
-                      config
-                 );
-
-            setDiets(dietsRes.data || []);
-            setSummary(summaryRes.data || {});
-            setGoal(goalRes.data || {});
-            setStreak(streakRes.data || {});
-            setRecommendations(recommendationRes.data?.recommendedMeals || []);
-
-        } catch (error) {
-
-            console.error(error);
-        }
-    };
-
-    useEffect(() => {
-
-        loadData();
-
-    }, []);
-
-    
-    const handleSubmit = async (e) => {
-
-        e.preventDefault();
-
-        try {
-
-            await api.post(
-                "/diets",
-                {
-                    mealName,
-                    calories,
-                    protein,
-                    carbs,
-                    fats,
-                    mealDate
-                },
-                config
-            );
-
-            setMealName("");
-            setCalories("");
-            setProtein("");
-            setCarbs("");
-            setFats("");
-            setMealDate("");
-
-            loadData();
-
-        } catch (error) {
-
-            console.error(error);
-        }
-    };
-
-    const deleteMeal = async (id) => {
-
-        try {
-
-            await api.delete(
-                `/diets/${id}`,
-                config
-            );
-
-            loadData();
-
-        } catch (error) {
-
-            console.error(error);
-        }
-    };
-
-    return (
-
-        <div className="flex bg-slate-100 min-h-screen">
-
-            <Sidebar />
-
-            <div className="flex-1 p-8">
-
-                {/* Hero */}
-
-                <div className="relative mb-8">
-
-                    <img
-                        src={dietBanner}
-                        alt="Diet"
-                        className="
-                        w-full
-                        h-72
-                        object-cover
-                        rounded-3xl
-                        "
-                    />
-
-                    <div
-                        className="
-                        absolute
-                        inset-0
-                        bg-black/50
-                        rounded-3xl
-                        "
-                    />
-
-                    <div
-                        className="
-                        absolute
-                        top-10
-                        left-10
-                        text-white
-                        "
-                    >
-
-                        <h1 className="text-5xl font-bold">
-                            Diet Tracker 🍎
-                        </h1>
-
-                        <p className="text-xl mt-2">
-                            Fuel your body with the right nutrition.
-                        </p>
-
-                    </div>
-
-                </div>
-
-                {/* Summary Cards */}
-
-                <div
-                    className="
-                    grid
-                    md:grid-cols-2
-                    lg:grid-cols-3
-                    gap-6
-                    mb-8
-                    "
-                >
-
-                    <div className="bg-white p-6 rounded-2xl shadow-lg">
-                        <h3 className="font-bold text-lg">
-                            🔥 Calories
-                        </h3>
-                        <p className="text-3xl mt-2">
-                            {summary.totalCalories || 0}
-                        </p>
-                    </div>
-
-                    <div className="bg-white p-6 rounded-2xl shadow-lg">
-                        <h3 className="font-bold text-lg">
-                            🥩 Protein
-                        </h3>
-                        <p className="text-3xl mt-2">
-                            {summary.totalProtein || 0}g
-                        </p>
-                    </div>
-
-                    <div className="bg-white p-6 rounded-2xl shadow-lg">
-                        <h3 className="font-bold text-lg">
-                            🍚 Carbs
-                        </h3>
-                        <p className="text-3xl mt-2">
-                            {summary.totalCarbs || 0}g
-                        </p>
-                    </div>
-
-                </div>
-
-                {/* Goal & Streak */}
-
-                <div
-                    className="
-                    grid
-                    lg:grid-cols-2
-                    gap-6
-                    mb-8
-                    "
-                >
-
-                    <div className="bg-white p-6 rounded-2xl shadow-lg">
-
-                        <h2 className="text-2xl font-bold mb-3">
-                            🎯 Calorie Goal
-                        </h2>
-
-                        <p>
-                            Goal: {goal.goalCalories || 0}
-                        </p>
-
-                        <p>
-                            Consumed:
-                            {" "}
-                            {goal.consumedCalories || 0}
-                        </p>
-
-                        <p>
-                            Remaining:
-                            {" "}
-                            {goal.remainingCalories || 0}
-                        </p>
-
-                    </div>
-
-                    <div className="bg-white p-6 rounded-2xl shadow-lg">
-
-                        <h2 className="text-2xl font-bold mb-3">
-                            🔥 Diet Streak
-                        </h2>
-
-                        <p className="text-4xl font-bold">
-                            {streak.currentStreak || 0} Days
-                        </p>
-
-                    </div>
-
-                </div>
-
-                {/* Add Meal */}
-
-                <div
-                    className="
-                    bg-white
-                    p-6
-                    rounded-2xl
-                    shadow-lg
-                    mb-8
-                    "
-                >
-                    {/* Diet Recommendations */}
-
-<div
-    className="
-    bg-white
-    p-6
-    rounded-2xl
-    shadow-lg
-    mb-8
-    "
->
-
-    <h2
-        className="
-        text-3xl
-        font-bold
-        mb-6
-        "
-    >
-        🥗 Diet Recommendations
-    </h2>
-
-    {recommendations.length === 0 ? (
-
-        <p className="text-gray-500">
-            No recommendations available.
-        </p>
-
-    ) : (
-
-        <div className="grid md:grid-cols-2 gap-4">
-
-            {recommendations.map(
-                (meal, index) => (
-
-                    <div
-                        key={index}
-                        className="
-                        bg-green-50
-                        border
-                        border-green-200
-                        p-4
-                        rounded-xl
-                        hover:scale-105
-                        transition
-                        "
-                    >
-                        ✅ {meal}
-                    </div>
-                )
-            )}
-
-        </div>
-
-    )}
-
-</div>
-
-                    <h2 className="text-3xl font-bold mb-6">
-                        Add Meal
-                    </h2>
-
-                    <form
-                        onSubmit={handleSubmit}
-                        className="
-                        grid
-                        md:grid-cols-2
-                        gap-4
-                        "
-                    >
-
-                        <input
-                            type="text"
-                            placeholder="Meal Name"
-                            value={mealName}
-                            onChange={(e) =>
-                                setMealName(
-                                    e.target.value
-                                )
-                            }
-                            className="border p-3 rounded-lg"
-                            required
-                        />
-
-                        <input
-                            type="number"
-                            placeholder="Calories"
-                            value={calories}
-                            onChange={(e) =>
-                                setCalories(
-                                    e.target.value
-                                )
-                            }
-                            className="border p-3 rounded-lg"
-                            required
-                        />
-
-                        <input
-                            type="number"
-                            placeholder="Protein"
-                            value={protein}
-                            onChange={(e) =>
-                                setProtein(
-                                    e.target.value
-                                )
-                            }
-                            className="border p-3 rounded-lg"
-                            required
-                        />
-
-                        <input
-                            type="number"
-                            placeholder="Carbs"
-                            value={carbs}
-                            onChange={(e) =>
-                                setCarbs(
-                                    e.target.value
-                                )
-                            }
-                            className="border p-3 rounded-lg"
-                            required
-                        />
-
-                        <input
-                            type="number"
-                            placeholder="Fats"
-                            value={fats}
-                            onChange={(e) =>
-                                setFats(
-                                    e.target.value
-                                )
-                            }
-                            className="border p-3 rounded-lg"
-                            required
-                        />
-
-                        <input
-                            type="date"
-                            value={mealDate}
-                            onChange={(e) =>
-                                setMealDate(
-                                    e.target.value
-                                )
-                            }
-                            className="border p-3 rounded-lg"
-                            required
-                        />
-
-                        <button
-                            type="submit"
-                            className="
-                            bg-green-600
-                            text-white
-                            p-3
-                            rounded-lg
-                            font-semibold
-                            "
-                        >
-                            Add Meal
-                        </button>
-
-                    </form>
-
-                </div>
-
-                {/* Meal List */}
-
-                <div
-                    className="
-                    grid
-                    md:grid-cols-2
-                    lg:grid-cols-3
-                    gap-6
-                    "
-                >
-
-                    {diets.map((meal) => (
-
-                        <DietCard
-                            key={meal.id}
-                            meal={meal}
-                            onDelete={deleteMeal}
-                        />
-
-                    ))}
-
-                </div>
-
+  const [diets, setDiets] = useState([]);
+  const [recommendations, setRecommendations] = useState([]);
+  const [summary, setSummary] = useState({ totalCalories: 0, totalProtein: 0, totalCarbs: 0, totalFats: 0 });
+  const [goal, setGoal] = useState({ goalCalories: 0, consumedCalories: 0, remainingCalories: 0 });
+  const [streak, setStreak] = useState({ currentStreak: 0 });
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ mealName: "", calories: "", protein: "", carbs: "", fats: "", mealDate: new Date().toISOString().slice(0, 10) });
+  const [loading, setLoading] = useState(true);
+
+
+  const loadData = async () => {
+    try {
+      const [dietsRes, summaryRes, goalRes, streakRes, recRes] = await Promise.allSettled([
+        api.get("/diets"),
+        api.get("/diets/summary/today"),
+        api.get("/diets/calorie-goal"),
+        api.get("/diets/streak"),
+        api.get("/users/recommendations/diet"),
+      ]);
+      if (dietsRes.status === "fulfilled") setDiets(dietsRes.value.data || []);
+      if (summaryRes.status === "fulfilled") setSummary(summaryRes.value.data || {});
+      if (goalRes.status === "fulfilled") setGoal(goalRes.value.data || {});
+      if (streakRes.status === "fulfilled") setStreak(streakRes.value.data || {});
+      if (recRes.status === "fulfilled") setRecommendations(recRes.value.data?.recommendedMeals || []);
+    } catch (error) {
+      console.error("[Diet.jsx] Load error:", error?.response?.status, error?.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { loadData(); }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      // Backend DietRequest expects Integer for calories/protein/carbs/fats
+      // and LocalDate for mealDate — send exact field names
+      const payload = {
+        mealName:  form.mealName.trim(),
+        calories:  form.calories  !== "" ? parseInt(form.calories,  10) : 0,
+        protein:   form.protein   !== "" ? parseInt(form.protein,   10) : 0,
+        carbs:     form.carbs     !== "" ? parseInt(form.carbs,     10) : 0,
+        fats:      form.fats      !== "" ? parseInt(form.fats,      10) : 0,
+        mealDate:  form.mealDate,
+      };
+      console.log("[Diet] Submitting meal payload:", payload);
+      await api.post("/diets", payload);
+      setForm({ mealName: "", calories: "", protein: "", carbs: "", fats: "", mealDate: new Date().toISOString().slice(0, 10) });
+      setShowForm(false);
+      loadData();
+    } catch (error) {
+      console.error("[Diet.jsx] addDiet failed:", error?.response?.status, error?.response?.data || error?.message);
+    }
+  };
+
+  const deleteMeal = async (id) => {
+    try { await api.delete(`/diets/${id}`); loadData(); } catch (error) { console.error("[Diet.jsx]", error?.response?.data || error?.message || error); }
+  };
+
+  const goalPct = goal.goalCalories ? Math.min((goal.consumedCalories / goal.goalCalories) * 100, 100) : 0;
+  const goalColor = goalPct > 90 ? "var(--fs-error)" : goalPct > 70 ? "var(--fs-warning)" : "var(--fs-success)";
+
+  const macros = [
+    { label: "Calories", value: summary.totalCalories || 0, unit: "kcal", color: "#F97316", bg: "rgba(249,115,22,0.08)", icon: "🔥" },
+    { label: "Protein", value: summary.totalProtein || 0, unit: "g", color: "#8B5CF6", bg: "rgba(139,92,246,0.08)", icon: "💪" },
+    { label: "Carbs", value: summary.totalCarbs || 0, unit: "g", color: "#0EA5E9", bg: "rgba(14,165,233,0.08)", icon: "🌾" },
+    { label: "Fats", value: summary.totalFats || 0, unit: "g", color: "#10B981", bg: "rgba(16,185,129,0.08)", icon: "🥑" },
+  ];
+
+  return (
+    <div className="fs-layout">
+      <Sidebar />
+      <main className="fs-main fs-page">
+
+        {/* HERO */}
+        <div style={{
+          background: "linear-gradient(135deg, #052e16 0%, #14532d 50%, #166534 100%)",
+          borderRadius: "var(--fs-radius-2xl)",
+          padding: "40px",
+          marginBottom: "var(--fs-space-8)",
+          position: "relative",
+          overflow: "hidden",
+        }}>
+          <div style={{ position: "absolute", inset: 0, background: "radial-gradient(circle at 75% 50%, rgba(16,185,129,0.3) 0%, transparent 60%)", pointerEvents: "none" }} />
+          <div style={{ position: "relative", zIndex: 1, display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 16 }}>
+            <div>
+              <p className="fs-hero-eyebrow" style={{ color: "#34D399" }}>Nutrition</p>
+              <h1 className="fs-hero-title">Fuel Your Performance</h1>
+              <p className="fs-hero-sub">Track every meal, hit your macros, stay consistent.</p>
             </div>
-
+            <div style={{ textAlign: "center", background: "rgba(255,255,255,0.08)", borderRadius: 16, padding: "14px 20px" }}>
+              <div style={{ fontSize: "2rem", fontWeight: 800, color: "#fff" }}>{streak.currentStreak || 0}</div>
+              <div style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.6)", letterSpacing: "0.08em", textTransform: "uppercase" }}>Day Streak 🔥</div>
+            </div>
+          </div>
         </div>
-    );
+
+        {/* TODAY'S MACROS */}
+        <div className="fs-grid-4" style={{ marginBottom: "var(--fs-space-8)" }}>
+          {macros.map(m => (
+            <div key={m.label} className="fs-stat-card">
+              <div className="stat-icon" style={{ background: m.bg, fontSize: 18 }}>{m.icon}</div>
+              <div className="stat-value" style={{ color: m.color }}>{m.value}<span style={{ fontSize: "0.875rem", fontWeight: 500, color: "var(--fs-text-tertiary)", marginLeft: 3 }}>{m.unit}</span></div>
+              <div className="stat-label">Today's {m.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* CALORIE GOAL */}
+        <div className="fs-card" style={{ padding: "24px", marginBottom: "var(--fs-space-8)" }}>
+          <div className="fs-section-header">
+            <h2 className="fs-h2">Daily Calorie Goal</h2>
+            <span className="fs-badge" style={{ background: `${goalColor}18`, color: goalColor }}>{Math.round(goalPct)}%</span>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
+            <span className="fs-caption">{goal.consumedCalories || 0} consumed</span>
+            <span className="fs-caption">{goal.remainingCalories || 0} remaining of {goal.goalCalories || 0}</span>
+          </div>
+          <div className="fs-progress">
+            <div className="fs-progress-fill success" style={{ width: `${goalPct}%`, background: `linear-gradient(90deg, ${goalColor}, ${goalColor}cc)` }} />
+          </div>
+        </div>
+
+        {/* LOG MEAL SECTION */}
+        <div style={{ marginBottom: "var(--fs-space-8)" }}>
+          <div className="fs-section-header">
+            <h2 className="fs-h2">Log a Meal</h2>
+            <button onClick={() => setShowForm(!showForm)} className={`fs-btn fs-btn-md ${showForm ? "fs-btn-secondary" : "fs-btn-primary"}`}>
+              {showForm ? "Cancel" : "+ Add Meal"}
+            </button>
+          </div>
+
+          {showForm && (
+            <div className="fs-card fs-animate-in" style={{ padding: "24px" }}>
+              <form onSubmit={handleSubmit}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "14px", marginBottom: "14px" }}>
+                  {[
+                    { key: "mealName", label: "Meal Name", type: "text", placeholder: "Grilled chicken & rice" },
+                    { key: "calories", label: "Calories (kcal)", type: "number", placeholder: "500" },
+                    { key: "protein", label: "Protein (g)", type: "number", placeholder: "40" },
+                    { key: "carbs", label: "Carbs (g)", type: "number", placeholder: "60" },
+                    { key: "fats", label: "Fats (g)", type: "number", placeholder: "15" },
+                    { key: "mealDate", label: "Date", type: "date" },
+                  ].map(f => (
+                    <div key={f.key} className="fs-input-group">
+                      <label className="fs-input-label">{f.label}</label>
+                      <input type={f.type} className="fs-input" placeholder={f.placeholder || ""} value={form[f.key]} onChange={e => setForm({ ...form, [f.key]: e.target.value })} required />
+                    </div>
+                  ))}
+                </div>
+                <button type="submit" className="fs-btn fs-btn-primary fs-btn-md">Save Meal</button>
+              </form>
+            </div>
+          )}
+        </div>
+
+        {/* RECOMMENDATIONS */}
+        {recommendations.length > 0 && (
+          <div className="fs-card" style={{ padding: "24px", marginBottom: "var(--fs-space-8)" }}>
+            <h2 className="fs-h2" style={{ marginBottom: "16px" }}>Personalized Meal Ideas</h2>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "10px" }}>
+              {recommendations.map((m, i) => (
+                <div key={`dietrec-${i}-${m.slice(0,8)}`} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 14px", background: "rgba(16,185,129,0.06)", borderLeft: "3px solid var(--fs-success)", borderRadius: "0 var(--fs-radius-lg) var(--fs-radius-lg) 0", fontSize: "0.875rem", color: "var(--fs-text-secondary)" }}>
+                  <span>✅</span> {m}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* MEAL LIST */}
+        <div>
+          <div className="fs-section-header">
+            <h2 className="fs-h2">Meal Log</h2>
+            <span className="fs-caption">{diets.length} meals tracked</span>
+          </div>
+          {diets.length === 0 ? (
+            <div className="fs-empty-state fs-card" style={{ padding: "64px 24px" }}>
+              <div className="empty-icon">🥗</div>
+              <p style={{ fontWeight: 600, color: "var(--fs-text-primary)", marginBottom: 6 }}>No meals logged yet</p>
+              <p style={{ fontSize: "0.875rem" }}>Start tracking your nutrition for better insights</p>
+            </div>
+          ) : (
+            <div className="fs-grid-3">
+              {diets.map(meal => <DietCard key={meal.id} meal={meal} onDelete={deleteMeal} />)}
+            </div>
+          )}
+        </div>
+
+      </main>
+    </div>
+  );
 }
 
 export default Diet;

@@ -1,169 +1,128 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import api from "../services/api";
 import banner from "../assets/login-banner.jpg";
 
 function Login() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showPass, setShowPass] = useState(false);
+  const navigate = useNavigate();
 
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [message, setMessage] = useState("");
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      const res = await api.post("/auth/login", { email, password });
+      localStorage.setItem("token", res.data.token);
+      localStorage.setItem("role", res.data.role);
+      navigate("/dashboard");
+    } catch (error) {
+      console.error("[Login] Auth failed:", error?.response?.status, error?.message);
+      setError("Invalid email or password. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const navigate = useNavigate();
-
-    const handleSubmit = async (e) => {
-
-        e.preventDefault();
-
-        try {
-
-            const response = await api.post("/auth/login", {
-                email,
-                password
-            });
-localStorage.setItem(
-    "token",
-    response.data.token
-);
-
-localStorage.setItem(
-    "role",
-    response.data.role
-);
-
-            setMessage("Login Successful ✅");
-
-            setTimeout(() => {
-                navigate("/dashboard");
-            }, 1000);
-
-        } catch (error) {
-
-            setMessage("Invalid Email or Password ❌");
-        }
-    };
-
-    return (
-        <div className="min-h-screen flex bg-gray-100">
-
-            {/* Left Side Image */}
-
-            <div className="hidden lg:block lg:w-1/2 relative">
-
-                <img
-                    src={banner}
-                    alt="Fitness"
-                    className="w-full h-screen object-cover"
-                />
-
-                <div className="absolute inset-0 bg-black/50"></div>
-
-                <div className="absolute bottom-16 left-12 text-white">
-
-                    <h1 className="text-5xl font-bold mb-4">
-                        Welcome Back
-                    </h1>
-
-                    <p className="text-xl max-w-md mb-6">
-                        Continue your fitness journey and crush your goals.
-                    </p>
-
-                    <div className="flex gap-4">
-
-                        <div className="bg-white/20 backdrop-blur-md p-4 rounded-xl">
-                            <h3 className="text-2xl font-bold">
-                                🔥
-                            </h3>
-                            <p className="text-sm">
-                                Daily Streaks
-                            </p>
-                        </div>
-
-                        <div className="bg-white/20 backdrop-blur-md p-4 rounded-xl">
-                            <h3 className="text-2xl font-bold">
-                                💪
-                            </h3>
-                            <p className="text-sm">
-                                Track Progress
-                            </p>
-                        </div>
-
-                    </div>
-
-                </div>
-
+  return (
+    <div className="fs-auth-layout">
+      {/* Left Panel */}
+      <div className="fs-auth-left">
+        <img src={banner} alt="" />
+        <div className="fs-auth-left-overlay" />
+        <div className="fs-auth-left-content">
+          <div style={{ marginBottom: "32px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "24px" }}>
+              <div style={{ width: 36, height: 36, background: "var(--fs-grad-primary)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>⚡</div>
+              <span style={{ fontFamily: "var(--fs-font-display)", fontSize: "1.25rem", fontWeight: 700, color: "#fff" }}>FitSphere</span>
             </div>
+            <h1 style={{ fontFamily: "var(--fs-font-display)", fontSize: "clamp(2rem,4vw,3rem)", fontWeight: 700, color: "#fff", lineHeight: 1.1, letterSpacing: "-0.02em", marginBottom: "12px" }}>
+              Your fitness journey continues here.
+            </h1>
+            <p style={{ fontSize: "1rem", color: "rgba(255,255,255,0.65)", maxWidth: 380 }}>
+              Track workouts, nutrition, and progress. Built for athletes who mean business.
+            </p>
+          </div>
 
-            {/* Login Form */}
-
-            <div className="w-full lg:w-1/2 flex items-center justify-center">
-
-                <div className="bg-white p-10 rounded-3xl shadow-2xl w-[430px]">
-
-                    <h2 className="text-4xl font-bold text-center mb-2">
-                        Login
-                    </h2>
-
-                    <p className="text-center text-gray-500 mb-8">
-                        Continue your fitness journey
-                    </p>
-
-                    <form onSubmit={handleSubmit}>
-
-                        <input
-                            type="email"
-                            placeholder="Email Address"
-                            value={email}
-                            onChange={(e) =>
-                                setEmail(e.target.value)
-                            }
-                            className="w-full p-3 border rounded-lg mb-4"
-                            required
-                        />
-
-                        <input
-                            type="password"
-                            placeholder="Password"
-                            value={password}
-                            onChange={(e) =>
-                                setPassword(e.target.value)
-                            }
-                            className="w-full p-3 border rounded-lg mb-6"
-                            required
-                        />
-
-                        <button
-                            type="submit"
-                            className="
-                            w-full
-                            bg-gradient-to-r
-                            from-blue-600
-                            to-cyan-500
-                            text-white
-                            p-3
-                            rounded-lg
-                            font-semibold
-                            hover:scale-105
-                            transition
-                            "
-                        >
-                            Login
-                        </button>
-
-                    </form>
-
-                    {message && (
-                        <p className="mt-4 text-center font-medium">
-                            {message}
-                        </p>
-                    )}
-
-                </div>
-
-            </div>
-
+          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+            {[
+              { icon: "🔥", value: "94%", label: "User retention" },
+              { icon: "💪", value: "2M+", label: "Workouts tracked" },
+              { icon: "⚡", value: "4.9★", label: "App rating" },
+            ].map((s) => (
+              <div key={s.label} style={{ background: "rgba(255,255,255,0.1)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 14, padding: "14px 18px" }}>
+                <div style={{ fontSize: "1.125rem", fontWeight: 800, color: "#fff" }}>{s.value} {s.icon}</div>
+                <div style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.6)", marginTop: 2 }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
         </div>
-    );
+      </div>
+
+      {/* Right Form */}
+      <div className="fs-auth-right" style={{ background: "var(--fs-bg)" }}>
+        <div style={{ width: "100%", maxWidth: 400, margin: "0 auto" }}>
+          {/* Mobile logo */}
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "40px" }}>
+            <div style={{ width: 36, height: 36, background: "var(--fs-grad-primary)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>⚡</div>
+            <span style={{ fontFamily: "var(--fs-font-display)", fontSize: "1.25rem", fontWeight: 700, color: "var(--fs-text-primary)" }}>FitSphere</span>
+          </div>
+
+          <h2 className="fs-h1" style={{ marginBottom: "6px" }}>Welcome back</h2>
+          <p className="fs-body" style={{ marginBottom: "32px" }}>Sign in to continue your journey</p>
+
+          {error && (
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "12px 16px", background: "var(--fs-error-bg)", border: "1px solid var(--fs-error)", borderRadius: "var(--fs-radius-lg)", marginBottom: "20px", fontSize: "0.875rem", color: "var(--fs-error)" }}>
+              <span>⚠️</span> {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            <div className="fs-input-group">
+              <label className="fs-input-label">Email address</label>
+              <div className="fs-input-with-icon">
+                <svg className="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                <input type="email" className="fs-input" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" required autoComplete="email" />
+              </div>
+            </div>
+
+            <div className="fs-input-group">
+              <label className="fs-input-label">Password</label>
+              <div className="fs-input-with-icon" style={{ position: "relative" }}>
+                <svg className="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <input type={showPass ? "text" : "password"} className="fs-input" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required autoComplete="current-password" style={{ paddingRight: 44 }} />
+                <button type="button" onClick={() => setShowPass(!showPass)} style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--fs-text-tertiary)", padding: 0 }}>
+                  {showPass ? "🙈" : "👁"}
+                </button>
+              </div>
+            </div>
+
+            <button type="submit" disabled={loading} className="fs-btn fs-btn-primary fs-btn-lg" style={{ width: "100%", marginTop: "6px" }}>
+              {loading ? (
+                <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ width: 16, height: 16, border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.8s linear infinite", display: "inline-block" }} />
+                  Signing in…
+                </span>
+              ) : "Sign In"}
+            </button>
+          </form>
+
+          <p style={{ textAlign: "center", marginTop: "24px", fontSize: "0.9rem", color: "var(--fs-text-secondary)" }}>
+            New to FitSphere?{" "}
+            <Link to="/register" style={{ color: "var(--fs-electric)", fontWeight: 600, textDecoration: "none" }}>Create account</Link>
+          </p>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+      `}</style>
+    </div>
+  );
 }
 
 export default Login;

@@ -1,295 +1,232 @@
-
-
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import StatCard from "../components/StatCard";
 import WorkoutChart from "../components/WorkoutChart";
 import api from "../services/api";
-import dashboardBanner from "../assets/dashboard-banner.jpg";
+
+function SkeletonCard() {
+  return (
+    <div className="fs-stat-card">
+      <div className="fs-skeleton" style={{ width: 44, height: 44, borderRadius: "var(--fs-radius-md)", marginBottom: 12 }} />
+      <div className="fs-skeleton" style={{ width: "60%", height: 32, marginBottom: 8 }} />
+      <div className="fs-skeleton" style={{ width: "40%", height: 16 }} />
+    </div>
+  );
+}
+
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 17) return "Good afternoon";
+  return "Good evening";
+}
 
 function Dashboard() {
+  const [dashboard, setDashboard] = useState({});
+  const [streak, setStreak] = useState({});
+  const [bmi, setBmi] = useState({});
+  const [workoutRecs, setWorkoutRecs] = useState([]);
+  const [dietRecs, setDietRecs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [name, setName] = useState("");
 
-    const [dashboard, setDashboard] = useState({});
-    const [streak, setStreak] = useState({});
-    const [bmi, setBmi] = useState({});
+  useEffect(() => {
 
-    const [workoutRecommendations,
-        setWorkoutRecommendations] = useState([]);
+    const load = async () => {
+      try {
+        // Always fetch profile first — BMI requires height+weight to be set
+        const profileRes = await api.get("/users/profile").catch(() => null);
+        const profile = profileRes?.data || {};
+        if (profileRes?.data?.name) {
+          setName(profile.name.split(" ")[0] || "Athlete");
+        }
 
-    const [dietRecommendations,
-        setDietRecommendations] = useState([]);
+        // Only request BMI if the user has filled in height AND weight
+        const hasBmiData = profile.height && profile.weight &&
+          Number(profile.height) > 0 && Number(profile.weight) > 0;
 
-    useEffect(() => {
+        const requests = [
+          api.get("/users/dashboard"),
+          api.get("/users/streak"),
+          hasBmiData ? api.get("/users/bmi") : Promise.resolve({ data: {} }),
+          api.get("/users/recommendations/workout"),
+          api.get("/users/recommendations/diet"),
+        ];
 
-        const token = localStorage.getItem("token");
+        const [dashRes, streakRes, bmiRes, workoutRecRes, dietRecRes] =
+          await Promise.allSettled(requests);
 
-        const config = {
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
-        };
+        if (dashRes.status === "fulfilled") setDashboard(dashRes.value.data || {});
+        else console.error("[Dashboard] /users/dashboard failed:", dashRes.reason?.response?.status);
 
-        const loadDashboard = async () => {
+        if (streakRes.status === "fulfilled") setStreak(streakRes.value.data || {});
+        else console.error("[Dashboard] /users/streak failed:", streakRes.reason?.response?.status);
 
-            try {
+        if (bmiRes.status === "fulfilled") setBmi(bmiRes.value.data || {});
+        else console.warn("[Dashboard] /users/bmi failed (profile may be incomplete):", bmiRes.reason?.response?.status);
 
-                const dashboardRes =
-                    await api.get("/users/dashboard", config);
+        if (workoutRecRes.status === "fulfilled")
+          setWorkoutRecs(workoutRecRes.value.data?.recommendations || []);
 
-                const streakRes =
-                    await api.get("/users/streak", config);
+        if (dietRecRes.status === "fulfilled")
+          setDietRecs(dietRecRes.value.data?.recommendations || []);
 
-                const bmiRes =
-                    await api.get("/users/bmi", config);
+      } catch (error) {
+        console.error("[Dashboard] Unexpected error during load:", error);
+      }
+      setLoading(false);
+    };
+    load();
+  }, []);
 
-                const workoutRes =
-                    await api.get(
-                        "/users/recommendations/workout",
-                        config
-                    );
+  return (
+    <div className="fs-layout">
+      <Sidebar />
+      <main className="fs-main fs-page">
 
-                const dietRes =
-                    await api.get(
-                        "/users/recommendations/diet",
-                        config
-                    );
+        {/* HERO GREETING */}
+        <div style={{
+          background: "var(--fs-grad-hero)",
+          borderRadius: "var(--fs-radius-2xl)",
+          padding: "40px 40px 36px",
+          marginBottom: "var(--fs-space-8)",
+          position: "relative",
+          overflow: "hidden",
+        }}>
+          <div style={{
+            position: "absolute", inset: 0,
+            background: "radial-gradient(circle at 80% 50%, rgba(14,165,233,0.2) 0%, transparent 60%)",
+            pointerEvents: "none",
+          }} />
+          <div style={{ position: "relative", zIndex: 1 }}>
+            <p className="fs-hero-eyebrow">Dashboard</p>
+            <h1 className="fs-hero-title">{getGreeting()}, {name} 👋</h1>
+            <p className="fs-hero-sub">Keep pushing toward your goals. Every rep counts.</p>
 
-                setDashboard(dashboardRes.data || {});
-                setStreak(streakRes.data || {});
-                setBmi(bmiRes.data || {});
-
-                setWorkoutRecommendations(
-                    workoutRes.data?.recommendations || []
-                );
-
-                setDietRecommendations(
-                    dietRes.data?.recommendations || []
-                );
-
-            } catch (error) {
-
-                console.error(error);
-            }
-        };
-
-        loadDashboard();
-
-    }, []);
-
-    return (
-
-        <div className="flex bg-slate-100 min-h-screen">
-
-            <Sidebar />
-
-            <div className="flex-1 p-8">
-
-                <div className="relative mb-10">
-
-                    <img
-                        src={dashboardBanner}
-                        alt="dashboard"
-                        className="
-                            w-full
-                            h-80
-                            object-cover
-                            rounded-3xl
-                        "
-                    />
-
-                    <div
-                        className="
-                            absolute
-                            inset-0
-                            bg-black/50
-                            rounded-3xl
-                        "
-                    />
-
-                    <div
-                        className="
-                            absolute
-                            top-12
-                            left-12
-                            text-white
-                        "
-                    >
-
-                        <h1 className="text-6xl font-bold mb-4">
-                            Welcome Back 👋
-                        </h1>
-
-                        <p className="text-xl">
-                            Keep pushing toward your fitness goals.
-                        </p>
-
-                    </div>
-
-                </div>
-
-                <div className="flex flex-wrap gap-4 mb-8">
-
-                    <button
-                        className="
-                        bg-cyan-600
-                        text-white
-                        px-6
-                        py-3
-                        rounded-xl
-                        shadow-lg
-                        "
-                    >
-                        ➕ Add Workout
-                    </button>
-
-                    <button
-                        className="
-                        bg-green-600
-                        text-white
-                        px-6
-                        py-3
-                        rounded-xl
-                        shadow-lg
-                        "
-                    >
-                        🍎 Add Diet
-                    </button>
-
-                    <button
-                        className="
-                        bg-purple-600
-                        text-white
-                        px-6
-                        py-3
-                        rounded-xl
-                        shadow-lg
-                        "
-                    >
-                        📈 Track Progress
-                    </button>
-
-                </div>
-
-                <div
-                    className="
-                    grid
-                    lg:grid-cols-4
-                    md:grid-cols-2
-                    gap-6
-                    mb-10
-                    "
-                >
-
-                    <StatCard
-                        title="Workout Streak"
-                        value={`${streak.currentStreak || 0} Days`}
-                        icon="🔥"
-                        color="from-orange-500 to-red-500"
-                    />
-
-                    <StatCard
-                        title="Total Workouts"
-                        value={dashboard.totalWorkouts || 0}
-                        icon="🏋️"
-                        color="from-cyan-500 to-blue-500"
-                    />
-
-                    <StatCard
-                        title="Calories Burned"
-                        value={dashboard.totalCaloriesBurned || 0}
-                        icon="🔥"
-                        color="from-green-500 to-emerald-600"
-                    />
-
-                    <StatCard
-                        title="BMI"
-                        value={bmi.bmi || 0}
-                        icon="⚖️"
-                        color="from-purple-500 to-pink-500"
-                    />
-
-                </div>
-
-                <div className="mb-10">
-                    <WorkoutChart />
-                </div>
-
-                <div className="grid lg:grid-cols-2 gap-8">
-
-                    <div
-                        className="
-                        bg-white
-                        p-6
-                        rounded-3xl
-                        shadow-lg
-                        "
-                    >
-
-                        <h2 className="text-2xl font-bold mb-6">
-                            💪 Workout Recommendations
-                        </h2>
-
-                        <div className="space-y-3">
-
-                            {workoutRecommendations.map((item, index) => (
-
-                                <div
-                                    key={index}
-                                    className="
-                                    p-4
-                                    bg-cyan-50
-                                    rounded-xl
-                                    "
-                                >
-                                    {item}
-                                </div>
-
-                            ))}
-
-                        </div>
-
-                    </div>
-
-                    <div
-                        className="
-                        bg-white
-                        p-6
-                        rounded-3xl
-                        shadow-lg
-                        "
-                    >
-
-                        <h2 className="text-2xl font-bold mb-6">
-                            🥗 Diet Recommendations
-                        </h2>
-
-                        <div className="space-y-3">
-
-                            {dietRecommendations.map((item, index) => (
-
-                                <div
-                                    key={index}
-                                    className="
-                                    p-4
-                                    bg-green-50
-                                    rounded-xl
-                                    "
-                                >
-                                    {item}
-                                </div>
-
-                            ))}
-
-                        </div>
-
-                    </div>
-
-                </div>
-
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginTop: "24px" }}>
+              <Link to="/workouts" className="fs-btn fs-btn-primary fs-btn-md">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14"/></svg>
+                Log Workout
+              </Link>
+              <Link to="/diet" className="fs-btn fs-btn-md" style={{ background: "rgba(255,255,255,0.12)", color: "#fff", border: "1px solid rgba(255,255,255,0.2)" }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2a7 7 0 0 1 7 7c0 5-7 13-7 13S5 14 5 9a7 7 0 0 1 7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+                Track Nutrition
+              </Link>
+              <Link to="/progress" className="fs-btn fs-btn-md" style={{ background: "rgba(255,255,255,0.12)", color: "#fff", border: "1px solid rgba(255,255,255,0.2)" }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+                Log Progress
+              </Link>
             </div>
-
+          </div>
         </div>
-    );
+
+        {/* STATS GRID */}
+        <div className="fs-grid-4" style={{ marginBottom: "var(--fs-space-8)" }}>
+          {loading ? (
+            [1,2,3,4].map(i => <SkeletonCard key={`dash-skeleton-${i}`} />)
+          ) : (
+            <>
+              <StatCard
+                title="Workout Streak"
+                value={`${streak.currentStreak || 0}d`}
+                icon="🔥"
+                gradient="energy"
+              />
+              <StatCard
+                title="Total Workouts"
+                value={dashboard.totalWorkouts || 0}
+                icon="🏋️"
+                gradient="primary"
+              />
+              <StatCard
+                title="Calories Burned"
+                value={(dashboard.totalCaloriesBurned || 0).toLocaleString()}
+                icon="⚡"
+                gradient="success"
+              />
+              <StatCard
+                title={bmi.category ? `BMI · ${bmi.category}` : "BMI"}
+                value={bmi.bmi ? Number(bmi.bmi).toFixed(1) : "—"}
+                icon="⚖️"
+                gradient="purple"
+              />
+            </>
+          )}
+        </div>
+
+        {/* CHART */}
+        <div style={{ marginBottom: "var(--fs-space-8)" }}>
+          <WorkoutChart />
+        </div>
+
+        {/* RECOMMENDATIONS */}
+        <div className="fs-grid-2">
+          {/* Workout Recs */}
+          <div className="fs-card" style={{ padding: "24px" }}>
+            <div className="fs-section-header">
+              <h2 className="fs-h2">💪 Workout Plan</h2>
+              <Link to="/workouts" className="fs-caption" style={{ color: "var(--fs-electric)" }}>View all</Link>
+            </div>
+            {workoutRecs.length === 0 ? (
+              <div className="fs-empty-state" style={{ padding: "24px" }}>
+                <div className="empty-icon">🏋️</div>
+                <p style={{ fontSize: "0.875rem" }}>Update your profile to get personalized workout recommendations</p>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                {workoutRecs.map((item, i) => (
+                  <div key={`wrec-${i}-${item.slice(0,10)}`} style={{
+                    display: "flex", alignItems: "center", gap: "12px",
+                    padding: "10px 14px",
+                    background: "var(--fs-surface-2)",
+                    borderRadius: "var(--fs-radius-lg)",
+                    fontSize: "0.875rem",
+                    color: "var(--fs-text-secondary)",
+                    borderLeft: "3px solid var(--fs-electric)",
+                  }}>
+                    <span style={{ width: 20, height: 20, background: "rgba(14,165,233,0.12)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.7rem", fontWeight: 700, color: "var(--fs-electric)", flexShrink: 0 }}>{i+1}</span>
+                    {item}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Diet Recs */}
+          <div className="fs-card" style={{ padding: "24px" }}>
+            <div className="fs-section-header">
+              <h2 className="fs-h2">🥗 Nutrition Tips</h2>
+              <Link to="/diet" className="fs-caption" style={{ color: "var(--fs-success)" }}>View all</Link>
+            </div>
+            {dietRecs.length === 0 ? (
+              <div className="fs-empty-state" style={{ padding: "24px" }}>
+                <div className="empty-icon">🥗</div>
+                <p style={{ fontSize: "0.875rem" }}>Update your profile to get personalized nutrition tips</p>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                {dietRecs.map((item, i) => (
+                  <div key={`drec-${i}-${item.slice(0,10)}`} style={{
+                    display: "flex", alignItems: "center", gap: "12px",
+                    padding: "10px 14px",
+                    background: "var(--fs-surface-2)",
+                    borderRadius: "var(--fs-radius-lg)",
+                    fontSize: "0.875rem",
+                    color: "var(--fs-text-secondary)",
+                    borderLeft: "3px solid var(--fs-success)",
+                  }}>
+                    <span style={{ width: 20, height: 20, background: "rgba(16,185,129,0.12)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.7rem", fontWeight: 700, color: "var(--fs-success)", flexShrink: 0 }}>{i+1}</span>
+                    {item}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
+    </div>
+  );
 }
 
 export default Dashboard;

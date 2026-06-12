@@ -1,210 +1,123 @@
 import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import api from "../services/api";
 import banner from "../assets/login-banner.jpg";
-import { Link } from "react-router-dom";
 
 function Register() {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
-    const [name, setName] = useState("");
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [message, setMessage] = useState("");
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      await api.post("/users", { name, email, password });
+      setSuccess(true);
+      setTimeout(() => navigate("/login"), 1500);
+    } catch (error) {
+      console.error("[Register] Registration failed:", error?.response?.status, error?.message);
+      setError("Registration failed. This email may already be in use.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const handleSubmit = async (e) => {
-
-        e.preventDefault();
-
-        try {
-
-            await api.post("/users", {
-                name,
-                email,
-                password
-            });
-
-            setMessage("Registration Successful ✅");
-
-            setName("");
-            setEmail("");
-            setPassword("");
-
-        } catch (error) {
-
-            setMessage("Registration Failed ❌");
-        }
-    };
-
-    return (
-        <div className="min-h-screen flex bg-gray-100">
-
-            {/* Left Side Image */}
-
-            <div className="hidden lg:block lg:w-1/2 relative">
-
-                <img
-                    src={banner}
-                    alt="Fitness"
-                    className="w-full h-screen object-cover object-center"
-                />
-
-                <div className="absolute inset-0 bg-black/50"></div>
-
-                <div className="absolute bottom-16 left-12 text-white">
-
-    <h1 className="text-5xl font-bold mb-4">
-        FitSphere
-    </h1>
-
-    <p className="text-xl max-w-md mb-6">
-        Track workouts, nutrition, progress and achieve your fitness goals.
-    </p>
-
-    <div className="flex gap-4">
-
-        <div className="bg-white/20 backdrop-blur-md p-4 rounded-xl">
-            <h3 className="text-2xl font-bold">
-                10K+
-            </h3>
-            <p className="text-sm">
-                Active Users
-            </p>
-        </div>
-
-        <div className="bg-white/20 backdrop-blur-md p-4 rounded-xl">
-            <h3 className="text-2xl font-bold">
-                1M+
-            </h3>
-            <p className="text-sm">
-                Workouts Logged
-            </p>
-        </div>
-
-    </div>
-
-</div>
-
+  return (
+    <div className="fs-auth-layout">
+      <div className="fs-auth-left">
+        <img src={banner} alt="" />
+        <div className="fs-auth-left-overlay" />
+        <div className="fs-auth-left-content">
+          <div style={{ marginBottom: "32px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "24px" }}>
+              <div style={{ width: 36, height: 36, background: "var(--fs-grad-primary)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>⚡</div>
+              <span style={{ fontFamily: "var(--fs-font-display)", fontSize: "1.25rem", fontWeight: 700, color: "#fff" }}>FitSphere</span>
             </div>
-
-            {/* Right Side Form */}
-
-            <div className="w-full lg:w-1/2 flex items-center justify-center">
-
-                <div
-                    className="
-                    bg-white
-                    p-10
-                    rounded-3xl
-                    shadow-2xl
-                    w-[430px]
-                    border
-                    border-gray-100
-                    "
-                >
-<h2 className="text-4xl font-bold text-center mb-2">
-    Create Account
-</h2>
-
-<p className="text-center text-gray-500 mb-6">
-    Join thousands of athletes transforming their lives.
-</p>
-
-<div className="grid grid-cols-3 gap-3 mb-8">
-
-    <div className="bg-blue-50 rounded-xl p-3 text-center">
-        <div className="text-2xl">🔥</div>
-        <p className="text-xs font-medium">
-            Streaks
-        </p>
-    </div>
-
-    <div className="bg-green-50 rounded-xl p-3 text-center">
-        <div className="text-2xl">💪</div>
-        <p className="text-xs font-medium">
-            Workouts
-        </p>
-    </div>
-
-    <div className="bg-orange-50 rounded-xl p-3 text-center">
-        <div className="text-2xl">🍎</div>
-        <p className="text-xs font-medium">
-            Nutrition
-        </p>
-    </div>
-
-</div>
-
-                    <form onSubmit={handleSubmit}>
-
-                        <input
-                            type="text"
-                            placeholder="Full Name"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            className="w-full p-3 border rounded-lg mb-4"
-                            required
-                        />
-
-                        <input
-                            type="email"
-                            placeholder="Email Address"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="w-full p-3 border rounded-lg mb-4"
-                            required
-                        />
-
-                        <input
-                            type="password"
-                            placeholder="Password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="w-full p-3 border rounded-lg mb-6"
-                            required
-                        />
-
-                        <button
-                            type="submit"
-                            className="
-                            w-full
-                            bg-gradient-to-r
-                            from-blue-600
-                            to-cyan-500
-                            text-white
-                            p-3
-                            rounded-lg
-                            font-semibold
-                            hover:scale-105
-                            transition
-                            "
-                        >
-                            Register
-                        </button>
-
-                    </form>
-
-                    {message && (
-                        <p className="mt-4 text-center font-medium">
-                            {message}
-                        </p>
-                    )}
-
-                    <p className="text-center mt-6 text-gray-600">
-                        Already have an account?
-
-                        <Link
-                           to="/login"
-                            className="text-blue-600 font-semibold ml-1"
-                        >
-                           Login
-                        </Link>
-                    </p>
-
-                </div>
-
-            </div>
-
+            <h1 style={{ fontFamily: "var(--fs-font-display)", fontSize: "clamp(2rem,4vw,3rem)", fontWeight: 700, color: "#fff", lineHeight: 1.1, letterSpacing: "-0.02em", marginBottom: "12px" }}>
+              Built for athletes who push limits.
+            </h1>
+            <p style={{ fontSize: "1rem", color: "rgba(255,255,255,0.65)", maxWidth: 380 }}>
+              Join thousands of athletes transforming their bodies and minds with FitSphere.
+            </p>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, maxWidth: 380 }}>
+            {[
+              { icon: "🏋️", text: "Smart workout tracking" },
+              { icon: "🥗", text: "Macro & calorie goals" },
+              { icon: "📈", text: "Visual progress charts" },
+              { icon: "🤖", text: "AI coaching 24/7" },
+            ].map((f) => (
+              <div key={f.text} style={{ background: "rgba(255,255,255,0.08)", borderRadius: 12, padding: "12px 14px", display: "flex", alignItems: "center", gap: 8, fontSize: "0.85rem", color: "rgba(255,255,255,0.85)" }}>
+                <span>{f.icon}</span> {f.text}
+              </div>
+            ))}
+          </div>
         </div>
-    );
+      </div>
+
+      <div className="fs-auth-right" style={{ background: "var(--fs-bg)" }}>
+        <div style={{ width: "100%", maxWidth: 400, margin: "0 auto" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "40px" }}>
+            <div style={{ width: 36, height: 36, background: "var(--fs-grad-primary)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>⚡</div>
+            <span style={{ fontFamily: "var(--fs-font-display)", fontSize: "1.25rem", fontWeight: 700, color: "var(--fs-text-primary)" }}>FitSphere</span>
+          </div>
+
+          <h2 className="fs-h1" style={{ marginBottom: "6px" }}>Create your account</h2>
+          <p className="fs-body" style={{ marginBottom: "32px" }}>Start your transformation today — it's free.</p>
+
+          {error && (
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "12px 16px", background: "var(--fs-error-bg)", border: "1px solid var(--fs-error)", borderRadius: "var(--fs-radius-lg)", marginBottom: "20px", fontSize: "0.875rem", color: "var(--fs-error)" }}>
+              ⚠️ {error}
+            </div>
+          )}
+
+          {success && (
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "12px 16px", background: "var(--fs-success-bg)", borderRadius: "var(--fs-radius-lg)", marginBottom: "20px", fontSize: "0.875rem", color: "var(--fs-success)" }}>
+              ✅ Account created! Redirecting to sign in…
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            <div className="fs-input-group">
+              <label className="fs-input-label">Full name</label>
+              <div className="fs-input-with-icon">
+                <svg className="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                <input type="text" className="fs-input" value={name} onChange={e => setName(e.target.value)} placeholder="Alex Johnson" required />
+              </div>
+            </div>
+            <div className="fs-input-group">
+              <label className="fs-input-label">Email address</label>
+              <div className="fs-input-with-icon">
+                <svg className="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                <input type="email" className="fs-input" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" required />
+              </div>
+            </div>
+            <div className="fs-input-group">
+              <label className="fs-input-label">Password</label>
+              <div className="fs-input-with-icon">
+                <svg className="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <input type="password" className="fs-input" value={password} onChange={e => setPassword(e.target.value)} placeholder="Minimum 6 characters" required minLength={6} />
+              </div>
+            </div>
+            <button type="submit" disabled={loading || success} className="fs-btn fs-btn-primary fs-btn-lg" style={{ width: "100%", marginTop: "6px" }}>
+              {loading ? "Creating account…" : "Get Started — Free"}
+            </button>
+          </form>
+
+          <p style={{ textAlign: "center", marginTop: "24px", fontSize: "0.9rem", color: "var(--fs-text-secondary)" }}>
+            Already have an account?{" "}
+            <Link to="/login" style={{ color: "var(--fs-electric)", fontWeight: 600, textDecoration: "none" }}>Sign in</Link>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default Register;

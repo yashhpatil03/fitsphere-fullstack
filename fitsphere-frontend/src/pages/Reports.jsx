@@ -5,416 +5,231 @@ import api from "../services/api";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
-
 function Reports() {
+  const [weeklyReport, setWeeklyReport] = useState(null);
+  const [monthlyReport, setMonthlyReport] = useState(null);
+  const [streak, setStreak] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
+  const reportRef = useRef();
 
-    const [weeklyReport, setWeeklyReport] = useState(null);
-    const [monthlyReport, setMonthlyReport] = useState(null);
-const [streak, setStreak] = useState(null);
-    const reportRef = useRef();
 
-    const token = localStorage.getItem("token");
+  const loadReports = async () => {
+    try {
+      const [w, m, s] = await Promise.allSettled([
+        api.get("/users/weekly-report"),
+        api.get("/users/monthly-report"),
+        api.get("/users/streak"),
+      ]);
+      if (w.status === "fulfilled") setWeeklyReport(w.value.data);
+      if (m.status === "fulfilled") setMonthlyReport(m.value.data);
+      if (s.status === "fulfilled") setStreak(s.value.data);
+    } catch (error) {
+      console.error("[Reports.jsx] Load error:", error?.response?.status, error?.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const config = {
-        headers: {
-            Authorization: `Bearer ${token}`
-        }
-    };
+  useEffect(() => { loadReports(); }, []);
 
-    const loadReports = async () => {
+  const downloadPDF = async () => {
+    setExporting(true);
+    try {
+      const canvas = await html2canvas(reportRef.current, { scale: 2, useCORS: true });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      const w = pdf.internal.pageSize.getWidth();
+      const h = (canvas.height * w) / canvas.width;
+      pdf.addImage(imgData, "PNG", 0, 0, w, h);
+      pdf.save("FitSphere_Report.pdf");
+    } catch (error) { console.error("[Reports.jsx]", error?.response?.data || error?.message || error); }
+    setExporting(false);
+  };
 
-        try {
+  const getAchievement = (s) => {
+    if (s >= 30) return { icon: "👑", label: "Fitness Legend", color: "#F59E0B", bg: "rgba(245,158,11,0.1)" };
+    if (s >= 14) return { icon: "💪", label: "Dedicated Athlete", color: "#0EA5E9", bg: "rgba(14,165,233,0.1)" };
+    if (s >= 7) return { icon: "🔥", label: "Consistency Master", color: "#F97316", bg: "rgba(249,115,22,0.1)" };
+    return { icon: "🚀", label: "Just Getting Started", color: "#8B5CF6", bg: "rgba(139,92,246,0.1)" };
+  };
 
-            const weeklyRes =
-                await api.get(
-                    "/users/weekly-report",
-                    config
-                );
+  const achievement = getAchievement(streak?.currentStreak || 0);
 
-            const monthlyRes =
-                await api.get(
-                    "/users/monthly-report",
-                    config
-                );
-                const streakRes =
-              await api.get(
-                  "/users/streak",
-                 config
-                 );
+  const weekStats = [
+    { label: "Workouts", value: weeklyReport?.totalWorkouts || 0 },
+    { label: "Calories Burned", value: (weeklyReport?.totalCaloriesBurned || 0).toLocaleString() },
+    { label: "Avg Duration", value: `${weeklyReport?.averageWorkoutDuration || 0} min` },
+  ];
 
-setStreak(streakRes.data);
+  const monthStats = [
+    { label: "Workouts", value: monthlyReport?.totalWorkouts || 0 },
+    { label: "Calories Burned", value: (monthlyReport?.totalCaloriesBurned || 0).toLocaleString() },
+    { label: "Avg Duration", value: `${monthlyReport?.averageWorkoutDuration || 0} min` },
+  ];
 
-            setWeeklyReport(weeklyRes.data);
-            setMonthlyReport(monthlyRes.data);
+  return (
+    <div className="fs-layout">
+      <Sidebar />
+      <main className="fs-main fs-page">
 
-        } catch (error) {
-
-            console.error(error);
-        }
-    };
-
-    useEffect(() => {
-
-        loadReports();
-
-    }, []);
-
-    const downloadPDF = async () => {
-
-        const element = reportRef.current;
-
-        const canvas =
-            await html2canvas(element);
-
-        const imgData =
-            canvas.toDataURL("image/png");
-
-        const pdf = new jsPDF();
-
-        pdf.addImage(
-            imgData,
-            "PNG",
-            10,
-            10,
-            190,
-            0
-        );
-
-        pdf.save("FitSphere_Report.pdf");
-    };
-
-    const printReport = () => {
-
-        window.print();
-    };
-
-    return (
-
-        <div className="flex bg-slate-100 min-h-screen">
-
-            <Sidebar />
-
-            <div className="flex-1 p-8">
-
-                <div className="flex justify-between mb-8">
-
-                    <h1 className="text-4xl font-bold">
-                        📊 Fitness Reports
-                    </h1>
-
-                    <div className="flex gap-4">
-
-                        <button
-                            onClick={downloadPDF}
-                            className="
-                            bg-green-600
-                            text-white
-                            px-5
-                            py-3
-                            rounded-xl
-                            "
-                        >
-                            ⬇ Download PDF
-                        </button>
-
-                        <button
-                            onClick={printReport}
-                            className="
-                            bg-blue-600
-                            text-white
-                            px-5
-                            py-3
-                            rounded-xl
-                            "
-                        >
-                            🖨 Print
-                        </button>
-
-                    </div>
-
-                </div>
-                
-            <div
-    className="
-    bg-gradient-to-r
-    from-orange-500
-    to-red-500
-    text-white
-    p-8
-    rounded-3xl
-    shadow-xl
-    mb-8
-    "
->
-
-    <div className="flex items-center justify-between">
-
-        <div>
-
-            <h2 className="text-3xl font-bold">
-                🔥 Current Streak
-            </h2>
-
-            <p className="mt-2 text-lg">
-                Consecutive workout days
-            </p>
-
+        {/* HEADER */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "16px", marginBottom: "var(--fs-space-8)" }}>
+          <div>
+            <p className="fs-label" style={{ marginBottom: 6 }}>Analytics</p>
+            <h1 className="fs-h1">Fitness Reports</h1>
+            <p className="fs-body">A full picture of your training progress.</p>
+          </div>
+          <div style={{ display: "flex", gap: "10px" }}>
+            <button
+              onClick={downloadPDF}
+              disabled={exporting}
+              className="fs-btn fs-btn-primary fs-btn-md"
+            >
+              {exporting ? (
+                <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ width: 14, height: 14, border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.8s linear infinite", display: "inline-block" }} />
+                  Exporting…
+                </span>
+              ) : (
+                <>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Export PDF
+                </>
+              )}
+            </button>
+            <button onClick={() => window.print()} className="fs-btn fs-btn-secondary fs-btn-md">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+              Print
+            </button>
+          </div>
         </div>
 
-        <div className="text-6xl font-extrabold">
+        <div ref={reportRef}>
 
-            {streak?.currentStreak || 0}
+          {/* STREAK + ACHIEVEMENT */}
+          <div className="fs-grid-2" style={{ marginBottom: "var(--fs-space-8)" }}>
 
-        </div>
-
-    </div>
-
-</div>
-<div
-    className="
-    bg-white
-    p-6
-    rounded-3xl
-    shadow-lg
-    mb-8
-    "
->
-
-    <h2 className="text-2xl font-bold mb-4">
-        🏆 Achievement
-    </h2>
-
-    {streak?.currentStreak >= 30 ? (
-
-        <div className="text-green-600 text-xl font-bold">
-            👑 Fitness Legend
-        </div>
-
-    ) : streak?.currentStreak >= 14 ? (
-
-        <div className="text-blue-600 text-xl font-bold">
-            💪 Dedicated Athlete
-        </div>
-
-    ) : streak?.currentStreak >= 7 ? (
-
-        <div className="text-orange-600 text-xl font-bold">
-            🔥 Consistency Master
-        </div>
-
-    ) : (
-
-        <div className="text-gray-600 text-xl font-bold">
-            🚀 Keep Going
-        </div>
-
-    )}
-
-</div>
-
-                <div ref={reportRef}>
-
-                    {/* Report Cards */}
-
-                    <div
-                        className="
-                        grid
-                        md:grid-cols-2
-                        gap-6
-                        mb-8
-                        "
-                    >
-
-                        <div
-                            className="
-                            bg-gradient-to-r
-                            from-blue-500
-                            to-cyan-500
-                            text-white
-                            p-8
-                            rounded-3xl
-                            shadow-lg
-                            "
-                        >
-
-
-                            <h2 className="text-3xl font-bold mb-6">
-                                📅 Weekly Report
-                            </h2>
-
-                            <p>
-                                🏋 Workouts:
-                                {" "}
-                                {weeklyReport?.totalWorkouts || 0}
-                            </p>
-
-                            <p>
-                                🔥 Calories:
-                                {" "}
-                                {weeklyReport?.totalCaloriesBurned || 0}
-                            </p>
-
-                            <p>
-                                ⏱ Avg Duration:
-                                {" "}
-                                {weeklyReport?.averageWorkoutDuration || 0}
-                                mins
-                            </p>
-
-                        </div>
-
-                        <div
-                            className="
-                            bg-gradient-to-r
-                            from-purple-500
-                            to-pink-500
-                            text-white
-                            p-8
-                            rounded-3xl
-                            shadow-lg
-                            "
-                        >
-
-                            <h2 className="text-3xl font-bold mb-6">
-                                📊 Monthly Report
-                            </h2>
-
-                            <p>
-                                🏋 Workouts:
-                                {" "}
-                                {monthlyReport?.totalWorkouts || 0}
-                            </p>
-
-                            <p>
-                                🔥 Calories:
-                                {" "}
-                                {monthlyReport?.totalCaloriesBurned || 0}
-                            </p>
-
-                            <p>
-                                ⏱ Avg Duration:
-                                {" "}
-                                {monthlyReport?.averageWorkoutDuration || 0}
-                                mins
-                            </p>
-
-                        </div>
-
-                    </div>
-
-                    {/* Chart */}
-
-                    <div className="mb-8">
-
-                        <WorkoutChart />
-
-                    </div>
-
-                    {/* Progress Overview */}
-
-                    <div
-                        className="
-                        bg-white
-                        p-8
-                        rounded-3xl
-                        shadow-lg
-                        "
-                    >
-
-                        <h2 className="text-3xl font-bold mb-6">
-                            📈 Progress Overview
-                        </h2>
-
-                        <div className="mb-6">
-
-                            <div className="flex justify-between">
-
-                                <span>
-                                    Weekly Calories
-                                </span>
-
-                                <span>
-                                    {weeklyReport?.totalCaloriesBurned || 0}
-                                </span>
-
-                            </div>
-
-                            <div
-                                className="
-                                w-full
-                                bg-gray-200
-                                rounded-full
-                                h-5
-                                "
-                            >
-
-                                <div
-                                    className="
-                                    bg-green-500
-                                    h-5
-                                    rounded-full
-                                    "
-                                    style={{
-                                        width: `${Math.min(
-                                            (weeklyReport?.totalCaloriesBurned || 0) / 50,
-                                            100
-                                        )}%`
-                                    }}
-                                />
-
-                            </div>
-
-                        </div>
-
-                        <div>
-
-                            <div className="flex justify-between">
-
-                                <span>
-                                    Monthly Workouts
-                                </span>
-
-                                <span>
-                                    {monthlyReport?.totalWorkouts || 0}
-                                </span>
-
-                            </div>
-
-                            <div
-                                className="
-                                w-full
-                                bg-gray-200
-                                rounded-full
-                                h-5
-                                "
-                            >
-
-                                <div
-                                    className="
-                                    bg-blue-500
-                                    h-5
-                                    rounded-full
-                                    "
-                                    style={{
-                                        width: `${Math.min(
-                                            (monthlyReport?.totalWorkouts || 0) * 5,
-                                            100
-                                        )}%`
-                                    }}
-                                />
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
+            {/* Streak Hero */}
+            <div style={{
+              background: "linear-gradient(135deg, #7C2D12, #EA580C, #F97316)",
+              borderRadius: "var(--fs-radius-2xl)",
+              padding: "32px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 16,
+              boxShadow: "var(--fs-shadow-energy)",
+            }}>
+              <div>
+                <p style={{ fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(255,255,255,0.6)", marginBottom: 6 }}>Current Streak</p>
+                <p style={{ fontFamily: "var(--fs-font-display)", fontSize: "clamp(2rem,5vw,3.5rem)", fontWeight: 800, color: "#fff", lineHeight: 1 }}>{streak?.currentStreak || 0}</p>
+                <p style={{ color: "rgba(255,255,255,0.7)", marginTop: 4, fontSize: "0.9rem" }}>consecutive workout days</p>
+              </div>
+              <div style={{ fontSize: "4rem", opacity: 0.9, lineHeight: 1 }}>🔥</div>
             </div>
 
+            {/* Achievement */}
+            <div className="fs-card" style={{ padding: "32px", display: "flex", alignItems: "center", gap: "20px" }}>
+              <div style={{ width: 60, height: 60, borderRadius: "50%", background: achievement.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.75rem", flexShrink: 0 }}>
+                {achievement.icon}
+              </div>
+              <div>
+                <p className="fs-label" style={{ marginBottom: 4 }}>Current Rank</p>
+                <h2 style={{ fontFamily: "var(--fs-font-display)", fontSize: "1.375rem", fontWeight: 700, color: achievement.color, margin: 0 }}>{achievement.label}</h2>
+                <p className="fs-caption" style={{ marginTop: 4 }}>
+                  {streak?.currentStreak >= 30 ? "Elite athlete — you're an inspiration!"
+                    : streak?.currentStreak >= 14 ? `${30 - (streak?.currentStreak || 0)} more days to Fitness Legend`
+                    : streak?.currentStreak >= 7 ? `${14 - (streak?.currentStreak || 0)} more days to Dedicated Athlete`
+                    : `${7 - (streak?.currentStreak || 0)} more days to Consistency Master`}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* WEEKLY + MONTHLY */}
+          <div className="fs-grid-2" style={{ marginBottom: "var(--fs-space-8)" }}>
+
+            {/* Weekly */}
+            <div style={{
+              background: "linear-gradient(135deg, #0C4A6E, #0369A1, #0EA5E9)",
+              borderRadius: "var(--fs-radius-2xl)",
+              padding: "28px",
+              boxShadow: "var(--fs-shadow-electric)",
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+                <span style={{ fontSize: "1.25rem" }}>📅</span>
+                <h2 style={{ fontFamily: "var(--fs-font-display)", fontSize: "1.25rem", fontWeight: 700, color: "#fff" }}>This Week</h2>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+                {weekStats.map(s => (
+                  <div key={s.label} style={{ background: "rgba(255,255,255,0.1)", borderRadius: "var(--fs-radius-lg)", padding: "14px", textAlign: "center" }}>
+                    <div style={{ fontFamily: "var(--fs-font-display)", fontSize: "1.375rem", fontWeight: 800, color: "#fff" }}>{s.value}</div>
+                    <div style={{ fontSize: "0.7rem", color: "rgba(255,255,255,0.65)", marginTop: 3, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em" }}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Monthly */}
+            <div style={{
+              background: "linear-gradient(135deg, #3B0764, #6D28D9, #8B5CF6)",
+              borderRadius: "var(--fs-radius-2xl)",
+              padding: "28px",
+              boxShadow: "0 4px 24px rgba(139,92,246,0.3)",
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+                <span style={{ fontSize: "1.25rem" }}>📊</span>
+                <h2 style={{ fontFamily: "var(--fs-font-display)", fontSize: "1.25rem", fontWeight: 700, color: "#fff" }}>This Month</h2>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+                {monthStats.map(s => (
+                  <div key={s.label} style={{ background: "rgba(255,255,255,0.1)", borderRadius: "var(--fs-radius-lg)", padding: "14px", textAlign: "center" }}>
+                    <div style={{ fontFamily: "var(--fs-font-display)", fontSize: "1.375rem", fontWeight: 800, color: "#fff" }}>{s.value}</div>
+                    <div style={{ fontSize: "0.7rem", color: "rgba(255,255,255,0.65)", marginTop: 3, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em" }}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* CHART */}
+          <div style={{ marginBottom: "var(--fs-space-8)" }}>
+            <WorkoutChart />
+          </div>
+
+          {/* PERFORMANCE PROGRESS BARS */}
+          <div className="fs-card" style={{ padding: "28px" }}>
+            <h2 className="fs-h2" style={{ marginBottom: "20px" }}>Performance Overview</h2>
+
+            {[
+              { label: "Weekly Calories Burned", value: weeklyReport?.totalCaloriesBurned || 0, max: 5000, color: "#10B981", gradient: "var(--fs-grad-success)" },
+              { label: "Monthly Workout Sessions", value: monthlyReport?.totalWorkouts || 0, max: 30, color: "#0EA5E9", gradient: "var(--fs-grad-primary)" },
+              { label: "Average Session Duration (min)", value: weeklyReport?.averageWorkoutDuration || 0, max: 90, color: "#8B5CF6", gradient: "var(--fs-grad-purple)" },
+            ].map(m => {
+              const pct = Math.min((m.value / m.max) * 100, 100);
+              return (
+                <div key={m.label} style={{ marginBottom: "20px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", alignItems: "center" }}>
+                    <span style={{ fontSize: "0.875rem", color: "var(--fs-text-secondary)", fontWeight: 500 }}>{m.label}</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: "0.875rem", fontWeight: 700, color: "var(--fs-text-primary)" }}>{m.value}</span>
+                      <span className="fs-badge" style={{ background: `${m.color}18`, color: m.color }}>{Math.round(pct)}%</span>
+                    </div>
+                  </div>
+                  <div className="fs-progress" style={{ height: 10 }}>
+                    <div className="fs-progress-fill" style={{ width: `${pct}%`, background: m.gradient, transition: "width 1s cubic-bezier(0.4,0,0.2,1)" }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
-    );
+
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </main>
+    </div>
+  );
 }
 
 export default Reports;

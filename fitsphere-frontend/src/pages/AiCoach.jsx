@@ -1,200 +1,197 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { askAI } from "../services/aiService";
-import DashboardLayout from "../layouts/DashboardLayout";
+import Sidebar from "../components/Sidebar";
+
+const QUICK_PROMPTS = [
+  "Best workout for fat loss?",
+  "How much protein do I need daily?",
+  "Beginner gym routine for muscle gain",
+  "How to improve running endurance?",
+  "What to eat before a workout?",
+  "Recovery tips after intense training",
+];
+
+function TypingIndicator() {
+  return (
+    <div style={{ display: "flex", gap: 5, alignItems: "center", padding: "12px 16px", background: "var(--fs-surface-2)", border: "1px solid var(--fs-border)", borderRadius: "18px 18px 18px 4px", width: "fit-content" }}>
+      {[0, 1, 2].map(i => (
+        <span key={`dot-${i}`} style={{
+          width: 7, height: 7, borderRadius: "50%",
+          background: "var(--fs-text-tertiary)",
+          animation: `bounce 1.2s ease-in-out ${i * 0.15}s infinite`,
+        }} />
+      ))}
+      <style>{`@keyframes bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-6px)} }`}</style>
+    </div>
+  );
+}
 
 function AiCoach() {
+  const [message, setMessage] = useState("");
+  const [messages, setMessages] = useState([
+    {
+      sender: "bot",
+      text: "Hey there! I'm your FitSphere AI Coach. I can help with workout plans, nutrition advice, recovery tips, and anything fitness-related. What's on your mind?",
+    },
+  ]);
+  const [loading, setLoading] = useState(false);
+  const bottomRef = useRef(null);
+  const inputRef = useRef(null);
 
-    const [message, setMessage] = useState("");
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, loading]);
 
-    const [messages, setMessages] = useState([
-        {
-            sender: "bot",
-            text: "Hello 👋 I am your FitSphere AI Coach."
-        }
-    ]);
+  const sendMessage = async (text) => {
+    const msg = (text || message).trim();
+    if (!msg) return;
 
-    const [loading, setLoading] = useState(false);
+    setMessages(prev => [...prev, { sender: "user", text: msg }]);
+    setMessage("");
+    setLoading(true);
 
-    const sendMessage = async () => {
+    try {
+      const reply = await askAI(msg);
+      setMessages(prev => [...prev, { sender: "bot", text: reply }]);
+    } catch (error) {
+      console.error("[AiCoach] AI request failed:", error?.response?.status, error?.message);
+      setMessages(prev => [...prev, { sender: "bot", text: "I couldn't connect right now. Please check your connection and try again." }]);
+    } finally {
+      setLoading(false);
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
+  };
 
-        if (!message.trim()) return;
+  return (
+    <div className="fs-layout">
+      <Sidebar />
+      <main className="fs-main fs-page" style={{ display: "flex", flexDirection: "column", padding: 0 }}>
 
-        const userMessage = message;
-
-        setMessages(prev => [
-            ...prev,
-            {
-                sender: "user",
-                text: userMessage
-            }
-        ]);
-
-        setMessage("");
-
-        setLoading(true);
-
-        try {
-
-            const reply =
-                await askAI(userMessage);
-
-            setMessages(prev => [
-                ...prev,
-                {
-                    sender: "bot",
-                    text: reply
-                }
-            ]);
-
-        } catch {
-
-            setMessages(prev => [
-                ...prev,
-                {
-                    sender: "bot",
-                    text:
-                        "Unable to connect to AI Coach."
-                }
-            ]);
-        }
-
-        setLoading(false);
-    };
-
-    return (
-
-        <DashboardLayout>
-
-            <div className="p-6">
-
-                <h1 className="
-                    text-3xl
-                    font-bold
-                    mb-6
-                ">
-                    🤖 AI Fitness Coach
-                </h1>
-
-                <div
-                    className="
-                    bg-white
-                    rounded-xl
-                    shadow
-                    h-[70vh]
-                    flex
-                    flex-col
-                    "
-                >
-
-                    <div
-                        className="
-                        flex-1
-                        overflow-y-auto
-                        p-4
-                        space-y-4
-                        "
-                    >
-
-                        {messages.map((msg, index) => (
-
-                            <div
-                                key={index}
-                                className={
-                                    msg.sender === "user"
-                                        ? "text-right"
-                                        : "text-left"
-                                }
-                            >
-
-                                <div
-                                    className={
-                                        msg.sender === "user"
-                                            ? `
-                                            inline-block
-                                            bg-blue-500
-                                            text-white
-                                            px-4
-                                            py-2
-                                            rounded-lg
-                                            `
-                                            : `
-                                            inline-block
-                                            bg-gray-200
-                                            px-4
-                                            py-2
-                                            rounded-lg
-                                            `
-                                    }
-                                >
-                                    {msg.text}
-                                </div>
-
-                            </div>
-
-                        ))}
-
-                        {loading && (
-
-                            <div className="text-gray-500">
-
-                                AI Coach is typing...
-
-                            </div>
-
-                        )}
-
-                    </div>
-
-                    <div
-                        className="
-                        border-t
-                        p-4
-                        flex
-                        gap-3
-                        "
-                    >
-
-                        <input
-                            type="text"
-                            value={message}
-                            placeholder="Ask fitness questions..."
-                            onChange={(e) =>
-                                setMessage(e.target.value)
-                            }
-                            onKeyDown={(e) =>
-                                e.key === "Enter"
-                                && sendMessage()
-                            }
-                            className="
-                            flex-1
-                            border
-                            rounded-lg
-                            px-4
-                            py-2
-                            "
-                        />
-
-                        <button
-                            onClick={sendMessage}
-                            className="
-                            bg-cyan-500
-                            text-white
-                            px-5
-                            py-2
-                            rounded-lg
-                            "
-                        >
-                            Send
-                        </button>
-
-                    </div>
-
-                </div>
-
+        {/* HEADER */}
+        <div style={{
+          padding: "28px 32px 20px",
+          borderBottom: "1px solid var(--fs-border)",
+          background: "var(--fs-surface)",
+          flexShrink: 0,
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+            <div style={{
+              width: 48, height: 48,
+              background: "var(--fs-grad-primary)",
+              borderRadius: "50%",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: "1.375rem",
+              boxShadow: "var(--fs-shadow-electric)",
+              flexShrink: 0,
+              animation: "pulse-glow 3s ease-in-out infinite",
+            }}>🤖</div>
+            <div>
+              <h1 className="fs-h2" style={{ marginBottom: 2 }}>AI Fitness Coach</h1>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--fs-success)", display: "inline-block" }} />
+                <span className="fs-caption" style={{ color: "var(--fs-success)" }}>Online · Powered by FitSphere AI</span>
+              </div>
             </div>
+          </div>
+        </div>
 
-        </DashboardLayout>
-    );
+        {/* CHAT AREA */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "24px 32px", display: "flex", flexDirection: "column", gap: "16px" }}>
+
+          {messages.map((msg, i) => (
+            <div
+              key={`msg-${i}-${msg.sender}`}
+              className="fs-fade-in"
+              style={{ display: "flex", justifyContent: msg.sender === "user" ? "flex-end" : "flex-start", alignItems: "flex-end", gap: "10px" }}
+            >
+              {msg.sender === "bot" && (
+                <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--fs-grad-primary)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.875rem", flexShrink: 0, marginBottom: 2 }}>🤖</div>
+              )}
+              <div
+                className={`fs-chat-bubble ${msg.sender}`}
+                style={{ whiteSpace: "pre-wrap", lineHeight: 1.6 }}
+              >
+                {msg.text}
+              </div>
+              {msg.sender === "user" && (
+                <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--fs-surface-2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.875rem", flexShrink: 0, marginBottom: 2, border: "1px solid var(--fs-border)" }}>👤</div>
+              )}
+            </div>
+          ))}
+
+          {loading && (
+            <div style={{ display: "flex", alignItems: "flex-end", gap: "10px" }}>
+              <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--fs-grad-primary)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.875rem", flexShrink: 0 }}>🤖</div>
+              <TypingIndicator />
+            </div>
+          )}
+
+          <div ref={bottomRef} />
+        </div>
+
+        {/* QUICK PROMPTS */}
+        {messages.length <= 2 && (
+          <div style={{ padding: "0 32px 16px", flexShrink: 0 }}>
+            <p className="fs-caption" style={{ marginBottom: "10px" }}>Try asking:</p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+              {QUICK_PROMPTS.map(p => (
+                <button
+                  key={p}
+                  onClick={() => sendMessage(p)}
+                  className="fs-badge fs-badge-electric"
+                  style={{ cursor: "pointer", border: "none", padding: "6px 14px", fontSize: "0.8125rem", transition: "all 0.2s" }}
+                  onMouseEnter={e => e.currentTarget.style.transform = "translateY(-1px)"}
+                  onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* INPUT BAR */}
+        <div style={{
+          padding: "16px 32px calc(16px + env(safe-area-inset-bottom))",
+          borderTop: "1px solid var(--fs-border)",
+          background: "var(--fs-surface)",
+          flexShrink: 0,
+        }}>
+          <div style={{ display: "flex", gap: "10px", maxWidth: 900 }}>
+            <input
+              ref={inputRef}
+              type="text"
+              className="fs-input"
+              value={message}
+              placeholder="Ask anything about fitness, nutrition, recovery…"
+              onChange={e => setMessage(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && !e.shiftKey && sendMessage()}
+              disabled={loading}
+              style={{ flex: 1 }}
+            />
+            <button
+              onClick={() => sendMessage()}
+              disabled={loading || !message.trim()}
+              className="fs-btn fs-btn-primary fs-btn-md"
+              style={{ flexShrink: 0, minWidth: 80 }}
+            >
+              {loading ? (
+                <span style={{ width: 16, height: 16, border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.8s linear infinite", display: "inline-block" }} />
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />
+                </svg>
+              )}
+              {!loading && <span style={{ marginLeft: 4 }}>Send</span>}
+            </button>
+          </div>
+          <p className="fs-caption" style={{ marginTop: 8, textAlign: "center" }}>AI responses are for informational purposes. Consult a professional for medical advice.</p>
+        </div>
+
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } } @keyframes pulse-glow { 0%,100%{box-shadow:0 4px 24px rgba(14,165,233,0.3)} 50%{box-shadow:0 4px 32px rgba(14,165,233,0.6)} }`}</style>
+      </main>
+    </div>
+  );
 }
 
 export default AiCoach;
